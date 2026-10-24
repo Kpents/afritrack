@@ -26,7 +26,7 @@ Open http://localhost:4173. Settings contains account registration and login. Ne
 
 See [V5_RELEASE_STATUS.md](V5_RELEASE_STATUS.md), [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md), [DEPLOYMENT.md](DEPLOYMENT.md), and [SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md). The existing detailed [feature matrix](FEATURE_PARITY_MATRIX.md) remains the long-term inventory, with a v5 status addendum.
 
-No production deployment has been performed. No public URL is claimed. Docker packaging must still be built on a Docker host. Verified food data, email recovery, PostgreSQL, payment/wearable/AI adapters, dedicated onboarding and professional workflows, and comprehensive mobile end-to-end testing remain open.
+The client progress build is live at https://kpents.github.io/afritrack/. GitHub Actions passed the tests and Docker build. The full account backend is not deployed. Verified food data, email recovery, PostgreSQL, payment/wearable/AI adapters, dedicated onboarding and professional workflows, and comprehensive mobile end-to-end testing remain open.
 
 ## Source
 
@@ -34,8 +34,9 @@ No production deployment has been performed. No public URL is claimed. Docker pa
 
 ## Client preview on GitHub Pages
 
-The public progress preview is designed for `https://kpents.github.io/afritrack/`. Publishing is verified separately in the release status; this configured address alone is not proof of a successful deployment.
+The public progress preview is designed for `https://kpents.github.io/afritrack/`. Deployment succeeded and the public onboarding, food logging and reload persistence were browser-verified; details are recorded in the release status.
 
 `node scripts/build-pages.mjs` exports only the frontend to `dist/`, with cloud account controls explicitly unavailable. Diaries, recipes, health entries and exports work in browser storage. The first-use welcome page sets a diary name without creating a cloud account. No sample user histories are seeded. Source food values remain labeled illustrative estimates.
 
 The Pages workflow runs tests, builds and deploys on main. In repository Settings → Pages, select GitHub Actions as the source. The full Node/SQLite backend is in the repository but does not execute on GitHub Pages. A separate persistent server deployment is required for registration and cross-device sync.
+

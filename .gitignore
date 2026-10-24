@@ -6,3 +6,10 @@ node_modules/
 *.sqlite-wal
 
 dist/
+
+/desktop_preview.png
+/explore_preview.png
+/food_reference.png
+/mobile_preview.png
+/v2_desktop_preview.png
+/v2_mobile_preview.png
