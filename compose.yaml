@@ -1,0 +1,18 @@
+services:
+  afritrack:
+    build: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      AFRITRACK_ORIGIN: ${AFRITRACK_ORIGIN:?Set the public HTTPS origin}
+      AFRITRACK_DB: /data/afritrack.sqlite
+    ports:
+      - "127.0.0.1:4173:4173"
+    volumes:
+      - afritrack-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  afritrack-data:

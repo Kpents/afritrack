@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {ensureExtensions, goalsForDay, matchFoodQuery, applyRepeatsForDay, copyPreviousDay, mealStreak, metricsForDay, metricHistory, fastElapsed, rankedFoodSuggestions} from '../app/src/advanced.js';
+import {FOODS, DEFAULT_GOALS} from '../app/src/data.js';
+const blank=()=>ensureExtensions({goals:{...DEFAULT_GOALS},diary:[],weights:[],exercises:[],hydration:{},steps:{}});
+test('existing v1 state is safely extended',()=>{const s=blank();assert.deepEqual(s.repeatRules,[]);assert.deepEqual(s.schedule,{});assert.deepEqual(s.biometrics,[]);assert.deepEqual(s.fasts,[]);});
+test('weekday macro scheduler overrides only saved weekdays and fields',()=>{const s=blank();s.schedule['2']={kcal:2400,protein:170};assert.equal(goalsForDay(s,'2026-10-13').kcal,2400);assert.equal(goalsForDay(s,'2026-10-14').kcal,DEFAULT_GOALS.kcal);assert.equal(goalsForDay(s,'2026-10-13').fiber,DEFAULT_GOALS.fiber);});
+test('repeat rules create exactly one diary snapshot per date',()=>{const s=blank();s.repeatRules=[{id:'r1',startDate:'2026-10-15',days:[4],template:{name:'Jollof Rice',meal:'Lunch',grams:250,kcal:350}}];assert.equal(applyRepeatsForDay(s,'2026-10-15'),1);assert.equal(applyRepeatsForDay(s,'2026-10-15'),0);assert.equal(s.diary.length,1);assert.equal(s.diary[0].date,'2026-10-15');assert.equal(applyRepeatsForDay(s,'2026-10-14'),0);});
+test('copy day snapshots do not retain repeat rule IDs',()=>{const s=blank();s.diary.push({id:'a',date:'2026-10-13',repeatRuleId:'r1',kcal:300,meal:'Lunch',name:'Meal'});assert.equal(copyPreviousDay(s,'2026-10-14'),1);assert.equal(s.diary.length,2);assert.notEqual(s.diary[1].id,'a');assert.equal(s.diary[1].repeatRuleId,undefined);});
+test('smart text parsing asks user to verify matching meal',()=>{const r=matchFoodQuery('I had 200g jollof for lunch',FOODS);assert.equal(r.food.id,'jollof');assert.equal(r.grams,200);assert.equal(r.meal,'Lunch');assert.equal(matchFoodQuery('unobtanium',FOODS),null);});
+test('streak counts consecutive diary days',()=>{const s=blank();s.diary=[{date:'2026-10-12'},{date:'2026-10-13'}];assert.equal(mealStreak(s,'2026-10-14'),2);});
+test('metrics compute daily nutrition, hydration and sleep',()=>{const s=blank();s.diary=[{date:'2026-10-14',kcal:250,protein:10},{date:'2026-10-13',kcal:200}];s.hydration['2026-10-14']=500;s.biometrics.push({date:'2026-10-14',kind:'sleep',value:7});const x=metricsForDay(s,'2026-10-14');assert.equal(x.kcal,250);assert.equal(x.water,500);assert.equal(x.sleep,7);assert.equal(metricHistory(s,'2026-10-14','kcal',2).length,2);});
+test('fasting time honours completed end timestamp',()=>{assert.equal(fastElapsed({start:0,end:3600000},7200000),60)});
+test('nutrient ranking stays within the supported demo fields',()=>{const f=rankedFoodSuggestions(FOODS,'fiber');assert.ok(f.length<=5);assert.throws(()=>rankedFoodSuggestions(FOODS,'vitaminC'));});

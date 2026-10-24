@@ -1,0 +1,23 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {makeServer} from '../server/server.mjs';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+test('JSON boundary, invalid origin, password types and health',async t=>{
+ const dir=mkdtempSync(join(tmpdir(),'afritrack-v5-'));
+ const app=makeServer({databasePath:join(dir,'test.sqlite')});
+ await new Promise(ok=>app.server.listen(0,'127.0.0.1',ok));
+ t.after(async()=>{await app.close();rmSync(dir,{recursive:true,force:true});});
+ const base=`http://127.0.0.1:${app.server.address().port}`;
+ const post=(body,headers={'Content-Type':'application/json'})=>fetch(base+'/api/auth/register',{method:'POST',headers,body});
+ for(const body of ['null','[]','5','"text"','{'])assert.equal((await post(body)).status,400);
+ assert.equal((await post('{}',{'Content-Type':'text/plain'})).status,415);
+ assert.equal((await post('{}',{'Content-Type':'application/json',Origin:'null'})).status,403);
+ const registered=await post(JSON.stringify({email:'test@example.com',password:'Long-valid-password!'}));
+ const cookie=registered.headers.get('set-cookie').split(';')[0];
+ assert.equal(registered.status,200);
+ const response=await fetch(base+'/api/account',{method:'DELETE',headers:{'Content-Type':'application/json',Cookie:cookie},body:'{}'});
+ assert.equal(response.status,403);
+ const health=await fetch(base+'/api/health');assert.equal((await health.json()).version,'v5');
+});

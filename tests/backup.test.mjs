@@ -1,0 +1,20 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {execFileSync} from 'node:child_process';
+import {DatabaseSync} from 'node:sqlite';
+import {openDatabase} from '../server/db.mjs';
+test('legacy schema upgrade is nondestructive; backup restores a consistent snapshot',t=>{
+ const dir=mkdtempSync(join(tmpdir(),'afritrack-backup-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const path=join(dir,'source.sqlite'),backup=join(dir,'backup.sqlite');
+ const db=openDatabase(path);
+ db.prepare('INSERT INTO users VALUES (?,?,?,?,?)').run('test','test@example.com','hash','salt',1);
+ db.exec('PRAGMA user_version=0');db.close();
+ const reopened=openDatabase(path);assert.equal(reopened.prepare('PRAGMA user_version').get().user_version,1);
+ assert.equal(reopened.prepare('SELECT count(*) AS n FROM users').get().n,1);
+ execFileSync(process.execPath,['server/backup.mjs',path,backup],{cwd:new URL('..',import.meta.url)});
+ reopened.close();
+ const restored=new DatabaseSync(backup);assert.equal(restored.prepare('PRAGMA integrity_check').get().integrity_check,'ok');assert.equal(restored.prepare('SELECT id FROM users').get().id,'test');restored.close();
+});
